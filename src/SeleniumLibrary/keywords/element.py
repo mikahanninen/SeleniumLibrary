@@ -1208,3 +1208,42 @@ return !element.dispatchEvent(evt);
 
     def _selenium_keys_has_attr(self, key):
         return hasattr(Keys, key)
+
+    @keyword("Execute CDP")
+    def execute_cdp(self, command, parameters):
+        """
+        Executes Chrome DevTools Protocol commands
+
+        Works only with Chrome/Chromium
+
+        For more information, available commands and parameters, see:
+        https://chromedevtools.github.io/devtools-protocol/
+
+        ``command`` command to execute as string
+
+        ``parameters`` parameters for command as a dictionary
+
+        Example:
+
+        | Open Chrome Browser | about:blank | headless=True |
+        | &{params} | Create Dictionary | useragent=Chrome/83.0.4103.53 |
+        | Execute CDP | Network.setUserAgentOverride | ${params} |
+        | Go To | https://robocorp.com |
+        """
+        if "chrom" not in self.driver.name:
+            raise NotImplementedError(
+                "Executing Chrome DevTools Protocol commands "
+                "works only with Chrome/Chromium"
+            )
+        return self._send_command_and_get_result(command, parameters)
+
+    def _send_command_and_get_result(self, cmd, params):
+        resource = (
+            f"session/{self.driver.session_id}/chromium/send_command_and_get_result"
+        )
+        # pylint: disable=protected-access
+        url = f"{self.driver.command_executor._url}/{resource}"
+        body = json.dumps({"cmd": cmd, "params": params})
+        response = self.driver.command_executor._request("POST", url, body)
+
+        return response.get("value")
